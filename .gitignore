@@ -1,0 +1,8 @@
+.env
+data/
+bin/
+obj/
+.venv/
+.DS_Store
+.idea/
+*.user

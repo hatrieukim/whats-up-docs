@@ -1,0 +1,4 @@
+rouge-score==0.1.2
+nltk
+numpy
+pandas

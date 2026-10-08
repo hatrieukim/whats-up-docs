@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsUpDocs</title>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <aside class="side">
+    <div class="brand"><span class="mark">w</span>WhatsUpDocs <small>#297</small></div>
+    <nav>
+      <button class="tab" data-tab="docs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Papers</button>
+      <button class="tab active" data-tab="prompts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Prompt</button>
+      <button class="tab" data-tab="runs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Experiments</button>
+      <button class="tab" data-tab="submit">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Submit</button>
+    </nav>
+  </aside>
+
+  <!-- ---- Papers ---- -->
+  <section id="tab-docs" class="panel" hidden>
+    <header class="head">
+      <div class="t"><h1>Papers</h1></div>
+      <label class="inline">Run <select id="doc-run"></select></label>
+      <label class="inline">Set <select id="doc-set">
+        <option value="">all</option><option value="quick">quick</option><option value="dev">dev</option>
+        <option value="holdout">holdout</option><option value="pool">pool</option><option value="study">study</option><option value="test">test</option>
+      </select></label>
+      <input id="doc-search" type="number" placeholder="find id" class="w-id" aria-label="Find id">
+    </header>
+    <div id="diag" class="diag" hidden></div>
+    <div class="split">
+      <div class="card list doclist">
+        <table>
+          <thead><tr>
+            <th class="num sortable" data-k="paperId">Paper</th><th>Set</th>
+            <th class="num sortable" data-k="summaryWords">Abstract words</th><th class="num sortable on" data-k="score">F1</th>
+          </tr></thead>
+          <tbody id="doc-rows"></tbody>
+        </table>
+      </div>
+      <div id="doc-view" class="card pad grow docview"><p class="empty">Pick a paper.</p></div>
+    </div>
+  </section>
+
+  <!-- ---- Prompt ---- -->
+  <section id="tab-prompts" class="panel">
+    <header class="head">
+      <div class="t"><h1>Prompt</h1></div>
+    </header>
+    <div class="split">
+      <div class="card list narrow"><div id="prompt-rows" class="versions"></div></div>
+      <div class="stack grow">
+        <div class="card editor">
+          <div class="toolbar">
+            <strong id="prompt-title">New version</strong>
+            <span id="prompt-dirty" class="dirty"></span>
+            <span class="spacer"></span>
+            <button id="prompt-save">Save</button>
+            <button id="prompt-fork" class="primary">Save as new version</button>
+          </div>
+          <input id="prompt-note" class="note-input" placeholder="Note for this version" aria-label="Note">
+          <textarea id="prompt-text" class="code prompt-text" spellcheck="false" aria-label="Prompt text"></textarea>
+          <details class="cfg-box"><summary>Settings</summary>
+          <div class="cfg">
+            <label>Target words <input id="cfg-targetWords" type="number" min="20"></label>
+            <label>Max words <input id="cfg-maxWords" type="number" min="20"></label>
+            <label>Min sentences <input id="cfg-minSentences" type="number" min="1"></label>
+            <label>Max sentences <input id="cfg-maxSentences" type="number" min="1"></label>
+            <label>Temperature <input id="cfg-temperature" type="number" min="0" max="2" step="0.1"></label>
+            <label>Intro tokens <input id="cfg-introTokens" type="number" min="0" step="100"></label>
+            <label>End tokens <input id="cfg-endTokens" type="number" min="0" step="100"></label>
+            <label>Middle tokens <input id="cfg-middleTokens" type="number" min="0" step="100"></label>
+            <label>Examples <select id="cfg-examples"><option value="">none</option><option value="full">full</option><option value="short">short</option></select></label>
+            <label>Example count <input id="cfg-exampleCount" type="number" min="0" max="40"></label>
+          </div>
+          <div class="ch0"><button id="examples-show">Show examples</button><span id="examples-info" class="note"></span></div>
+          <pre id="examples-text" class="code examples-text" hidden></pre>
+          </details>
+        </div>
+
+        <div class="card pad">
+          <div class="ch0">
+            <h2>Try on papers</h2>
+            <input id="try-id" type="number" placeholder="id (empty = random)" class="w-id2" aria-label="Paper id">
+            <button id="try-one" class="primary">Try</button>
+            <button id="try-five">Try 5 papers</button>
+          </div>
+          <p id="try-summary" class="note"></p>
+          <div id="try-results" class="results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---- Experiments ---- -->
+  <section id="tab-runs" class="panel" hidden>
+    <header class="head">
+      <div class="t"><h1>Experiments</h1></div>
+    </header>
+
+    <div class="card pad">
+      <div class="runform">
+        <label>Prompt <select id="run-prompt"></select></label>
+        <label>Set
+          <select id="run-set">
+            <option value="quick">quick (30)</option>
+            <option value="dev">dev (150)</option>
+            <option value="holdout">holdout (100)</option>
+          </select>
+        </label>
+        <button id="run-start" class="primary">Run</button>
+      </div>
+      <p id="run-msg" class="note"></p>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <h2>Runs</h2>
+        <button id="cmp-go" class="small" disabled title="Tick two runs to compare">Compare ticked runs</button>
+      </div>
+      <div class="scroll">
+        <table class="runs">
+          <thead><tr>
+            <th></th><th class="num">#</th><th>Name</th><th>Prompt</th><th>Set</th><th class="num">F1</th><th class="num">Words</th><th>Time</th><th></th><th></th>
+          </tr></thead>
+          <tbody id="run-rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="cmp" class="card pad" hidden></div>
+
+    <div id="run-detail" class="split top" hidden>
+      <div class="card list wide">
+        <div class="ch"><h2 id="detail-title"></h2></div>
+        <table class="outs">
+          <thead><tr>
+            <th class="num sortable" data-k="paperId">Paper</th><th class="num sortable" data-k="score">F1</th>
+            <th class="num sortable" data-k="words">Words</th><th>Error</th>
+          </tr></thead>
+          <tbody id="out-rows"></tbody>
+        </table>
+      </div>
+      <div id="out-view" class="card pad grow"><p class="empty">Pick a paper.</p></div>
+    </div>
+  </section>
+
+  <!-- ---- Submit ---- -->
+  <section id="tab-submit" class="panel" hidden>
+    <header class="head">
+      <div class="t"><h1>Submit</h1></div>
+    </header>
+
+    <div class="card pad">
+      <div class="ch0"><h2><span class="stepn">1</span>Run on the 345 test papers</h2></div>
+      <div class="runform">
+        <label>Use the exact setup of run <select id="sub-source"></select></label>
+        <button id="sub-run" class="primary">Run on test</button>
+      </div>
+      <p id="sub-msg" class="note"></p>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2><span class="stepn">2</span>Check and build the CSV</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Run</th><th>Check</th><th></th></tr></thead>
+          <tbody id="sub-runs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><h2><span class="stepn">3</span>Submission history</h2></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th class="num">#</th><th>Created</th><th>Prompt</th><th class="num">Dev score</th>
+            <th class="num">Public score</th><th class="num">Gap</th><th>Note</th><th></th></tr></thead>
+          <tbody id="sub-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
