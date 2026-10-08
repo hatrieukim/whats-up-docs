@@ -35,12 +35,10 @@ Picking the right sentences has a high ceiling. Writing new text does not. So th
 
 ```mermaid
 flowchart LR
-    A[Paper<br/>Markdown] --> B[Clean<br/>citations, tables,<br/>HTML entities]
-    B --> C[Build context<br/>intro 2500 tok<br/>+ cue sentences from the middle 500 tok<br/>+ conclusion 1500 tok]
-    C --> D["Number every sentence<br/>#91;1#93; … #91;n#93;"]
-    D --> E["LLM picks sentence numbers<br/>JSON: sentences 12, 3, 45"]
-    E --> F[Assemble verbatim<br/>in paper order<br/>≤ 250 words]
-    F --> G[Abstract]
+    A["Paper"] --> B["Clean + cut<br/>intro · middle cues · conclusion"]
+    B --> C["Number sentences<br/>#91;1#93; … #91;n#93;"]
+    C --> D["LLM picks<br/>sentence numbers"]
+    D --> E["Copy verbatim<br/>≤ 250 words"]
 ```
 
 1. **Clean.** Strip citations, tables, captions and HTML entities from the paper. Keep section headings.
