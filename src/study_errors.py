@@ -1,5 +1,5 @@
-"""Soi lỗi chọn câu của một lượt: so câu model chọn với câu oracle theo từng đặc điểm câu. Không gọi LLM.
-Chạy: .venv/bin/python src/study_errors.py <run_id> [số bài điểm thấp để in]"""
+"""Study the sentence-selection errors of a run: compare model picks with oracle picks by sentence feature. No LLM calls.
+Run: .venv/bin/python src/study_errors.py <run_id> [number of low-scoring papers to print]"""
 import re, sys
 from collections import Counter, defaultdict
 import numpy as np
@@ -25,7 +25,7 @@ FEATS = {k: re.compile(v, re.I) for k, v in FEATS.items()}
 
 tot = Counter(); orc_n = Counter(); md_n = Counter(); hit = Counter()
 missed, wrong = [], []
-pos_bucket = lambda S, n: S[n][1] + (":đoạn đầu" if S[n][1] in ("BEGINNING", "FULL") and n - min(k for k in S if S[k][1] == S[n][1]) < 6 else "")
+pos_bucket = lambda S, n: S[n][1] + (":opening" if S[n][1] in ("BEGINNING", "FULL") and n - min(k for k in S if S[k][1] == S[n][1]) < 6 else "")
 per_doc = []
 for pid, ctx, raw, summ, score, ref in rows:
     S = parse_ctx(ctx)
@@ -43,20 +43,20 @@ for pid, ctx, raw, summ, score, ref in rows:
         if n in used and n not in orc: wrong.append((prec(n), pid, n, pos_bucket(S, n), s))
     per_doc.append((score, of, pid, used, orc, S, ref))
 
-print(f"{len(rows)} bài. F1 model {np.mean([d[0] for d in per_doc]):.4f}, oracle context {np.mean([d[1] for d in per_doc]):.4f}")
-print(f"\n{'đặc điểm':38} {'số câu':>7} {'oracle lấy':>10} {'model lấy':>10} {'model/oracle':>12}")
+print(f"{len(rows)} papers. F1 model {np.mean([d[0] for d in per_doc]):.4f}, oracle context {np.mean([d[1] for d in per_doc]):.4f}")
+print(f"\n{'feature':38} {'sentences':>7} {'oracle':>10} {'model':>10} {'model/oracle':>12}")
 for k in sorted(tot, key=lambda k: -orc_n[k]):
     if orc_n[k] < 5: continue
     print(f"{k:38} {tot[k]:7} {orc_n[k]/tot[k]:10.1%} {md_n[k]/tot[k]:10.1%} {md_n[k]/max(1,orc_n[k]):12.2f}")
-print(f"\ncâu oracle bị bỏ: {len(missed)}; câu model lấy mà oracle không lấy: {len(wrong)}")
-wp = np.array([w[0] for w in wrong]); print("độ trùng (tỉ lệ cặp từ có trong abstract) của câu lấy sai:", np.round(np.percentile(wp, [25, 50, 75]), 2))
-print("phần chứa câu bị bỏ:", Counter(m[3] for m in missed).most_common())
-print("phần chứa câu lấy sai:", Counter(w[3] for w in wrong).most_common())
+print(f"\noracle sentences missed: {len(missed)}; model picks the oracle did not pick: {len(wrong)}")
+wp = np.array([w[0] for w in wrong]); print("overlap (share of bigrams in the abstract) of wrong picks:", np.round(np.percentile(wp, [25, 50, 75]), 2))
+print("part containing missed sentences:", Counter(m[3] for m in missed).most_common())
+print("part containing wrong picks:", Counter(w[3] for w in wrong).most_common())
 
 if SHOW:
     for score, of, pid, used, orc, S, ref in sorted(per_doc, key=lambda d: d[0] - d[1])[:SHOW]:
         print(f"\n===== #{pid}  model {score:.3f}  oracle {of:.3f}")
         print("ABSTRACT:", ref[:700])
         for n in sorted(set(used) | set(orc)):
-            tag = "ĐÚNG " if n in used and n in orc else "BỎ   " if n in orc else "SAI  "
+            tag = "HIT  " if n in used and n in orc else "MISS " if n in orc else "WRONG"
             print(f"  {tag}[{n}] ({S[n][1]}) {S[n][0][:220]}")

@@ -18,7 +18,7 @@ public sealed class DiagnosticsTests(Corpus corpus)
     {
         string[] sents = ["noise words here only", "we find that trust declines", "data come from a panel survey", "unrelated filler text"];
         double f = Diagnostics.Oracle(sents, "We find that trust declines. Data come from a panel survey.");
-        // Hai câu đúng ghép lại thiếu đúng 1 cặp từ nối giữa hai câu ("declines data") so với abstract
+        // The two right sentences joined together miss exactly 1 bigram vs the abstract: the one spanning both sentences ("declines data")
         Assert.True(f > 0.9, $"oracle = {f}");
         Assert.Equal(0, Diagnostics.Oracle(["x y z"], "a b c"));
     }
@@ -31,7 +31,7 @@ public sealed class DiagnosticsTests(Corpus corpus)
         Assert.Equal(ctx.Sentences, Diagnostics.ContextSentences(ctx.Text));
     }
 
-    // Trần của cả bài phải ≥ trần của context (context là tập con câu của bài), trên mọi bài quick
+    // Whole-paper ceiling must be >= context ceiling (the context is a subset of the paper's sentences), on every quick paper
     [Fact]
     public void Full_paper_oracle_is_at_least_context_oracle_on_average()
     {

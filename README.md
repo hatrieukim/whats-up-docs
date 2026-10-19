@@ -137,14 +137,14 @@ WhatsUpDocs/            ASP.NET Core app (port 5090)
   wwwroot/              UI
 WhatsUpDocs.Tests/      xUnit tests (53), incl. metric parity with the official scorer
 src/                    Python research scripts (baselines, fixtures, error analysis)
-docs/                   research and EDA notes (in Vietnamese), screenshots
+docs/                   research and EDA notes, screenshots
 ```
 
 ## Running it
 
 Requirements: .NET 8, Python 3.12, and an OpenAI-compatible endpoint.
 
-1. Download `train.csv`, `test_features.csv` and `submission_format.csv` from the competition page into `data/`. The competition data is not included in this repository.
+1. Get the data. Sign in to DrivenData, join the competition, and download `train.csv`, `test_features.csv` and `submission_format.csv` from the [data download page](https://www.drivendata.org/competitions/297/whats-up-docs/data/) into `data/`. The competition data is **not** included in this repository: get it from DrivenData under their terms. `data/` is git-ignored.
 2. Copy `.env.example` to `.env` and fill in the endpoint, the key and the model.
 3. Generate the test fixtures from the official scorer:
 
@@ -156,7 +156,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/make_fixtures.py
 ```
 
-4. Run the tests and start the app:
+4. Run the tests (they need the competition CSVs and the fixtures from step 3) and start the app:
 
 ```bash
 dotnet test WhatsUpDocs.sln
@@ -167,3 +167,16 @@ cd WhatsUpDocs && dotnet run --launch-profile http
 ```
 
 Open http://localhost:5090. On first start the app imports the CSVs into `data/app.db`, creates the splits and seeds prompt #1.
+
+Everything the app writes (the SQLite database, submission CSVs, fixtures) stays in `data/`.
+
+The Python scripts in `src/` read the same `data/` folder. `src/analyze_run.py`, `src/inspect_run.py` and `src/study_errors.py` take a run id from the app's database, for example `.venv/bin/python src/study_errors.py 8`.
+
+## License
+
+[MIT](LICENSE) © 2026 hatrieukim.
+
+Third-party material:
+- `src/official_rouge.py` is copied from the official benchmark notebook, which in turn derives from Google's [`rouge_score`](https://github.com/google-research/google-research/tree/master/rouge) (Apache License 2.0). It is used only to check the C# scorer.
+- The fonts in `WhatsUpDocs/wwwroot/fonts/` are [Be Vietnam Pro](https://github.com/bettergui/BeVietnamPro) and [Literata](https://github.com/googlefonts/literata), both under the SIL Open Font License 1.1.
+- The papers shown in the screenshots come from SocArXiv preprints (CC BY 4.0) via the competition dataset.

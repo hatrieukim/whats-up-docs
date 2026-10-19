@@ -23,20 +23,20 @@ public sealed class SubmissionRow
     public long? PromptId { get; set; }
     public string? Model { get; set; }
     public string? ParentRuns { get; set; }
-    // Điểm dev của lượt gốc (lượt test không có abstract nên không tự chấm được)
+    // Dev score of the source run (a test run has no abstracts, so it cannot score itself)
     public double? SourceScore { get; set; }
     public string? SourceSet { get; set; }
 }
 
 public sealed record SubmissionUpdate(double? PublicScore, string? Note);
 
-// formatPath: file mẫu của BTC; outputDir: nơi ghi file CSV nộp
+// formatPath: the organizers' submission format file; outputDir: where submission CSVs are written
 public sealed class Submissions(AppDb db, RunStore runs, string formatPath, string outputDir)
 {
     public string FormatPath => formatPath;
     public string OutputDir => outputDir;
 
-    // Thứ tự và danh sách id lấy từ file mẫu của BTC, không lấy từ DB, để chắc khớp đúng file họ chấm
+    // The id list and order come from the organizers' format file, not the DB, to be sure they match the file they score
     public List<long> ExpectedIds() =>
         File.ReadLines(FormatPath).Skip(1).Where(l => l.Length > 0).Select(l => long.Parse(l.Split(',')[0], CultureInfo.InvariantCulture)).ToList();
 
@@ -82,7 +82,7 @@ public sealed class Submissions(AppDb db, RunStore runs, string formatPath, stri
         foreach (var (id, summary) in rows)
         {
             csv.WriteField(id);
-            // Dòng mới trong một ô hợp lệ với CSV nhưng dễ làm hỏng trình đọc sơ sài, nên gộp thành dấu cách
+            // Newlines inside a cell are valid CSV but break naive readers, so collapse them to spaces
             csv.WriteField(summary.Replace("\r", " ").Replace("\n", " ").Trim());
             csv.NextRecord();
         }

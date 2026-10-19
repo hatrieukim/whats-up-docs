@@ -97,7 +97,7 @@ public sealed class AppDb
         return conn;
     }
 
-    // Chỉ nhập khi bảng docs còn trống: CSV của BTC không đổi, nhập lại không có ích
+    // Import only when the docs table is empty: the organizers' CSVs never change, re-importing is pointless
     public (int Train, int Test) ImportIfEmpty(string trainCsv, string testCsv)
     {
         using var conn = Open();
@@ -133,7 +133,7 @@ public sealed class AppDb
             yield return (csv.GetField<long>("paper_id"), csv.GetField("text")!, withSummary ? csv.GetField("summary") : null);
     }
 
-    // Tập đã lưu thì giữ nguyên (kể cả khi code chia tập đổi) để điểm các lượt cũ còn so được
+    // Saved sets are kept as is (even if the split code changes) so old run scores stay comparable
     public int EnsureSets()
     {
         using var conn = Open();
@@ -182,7 +182,7 @@ public sealed class AppDb
     public List<DocListItem> ListDocs()
     {
         using var conn = Open();
-        // Số từ đếm thô theo dấu cách, chỉ để hiển thị
+        // Rough word count by spaces, for display only
         return conn.Query<DocListItem>("""
             SELECT paper_id AS PaperId, split AS Split, chars AS Chars,
                    CASE WHEN summary IS NULL THEN NULL

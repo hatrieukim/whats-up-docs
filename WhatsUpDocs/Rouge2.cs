@@ -4,8 +4,8 @@ namespace WhatsUpDocs;
 
 public readonly record struct RougeScore(double Precision, double Recall, double F1);
 
-// Port 1:1 của code chấm BTC (rouge_score của Google, use_stemmer=False), xem src/official_rouge.py.
-// Thứ tự phép tính giữ nguyên để kết quả double khớp tuyệt đối với Python.
+// 1:1 port of the organizers' scorer (Google rouge_score, use_stemmer=False), see src/official_rouge.py.
+// The order of operations is kept so double results match Python exactly.
 public static class Rouge2
 {
     private static readonly Regex NonAlnum = new("[^a-z0-9]+", RegexOptions.Compiled);
@@ -13,8 +13,8 @@ public static class Rouge2
 
     public static List<string> Tokenize(string text)
     {
-        // Python lower() đổi İ thành "i" + dấu chấm kết hợp (full case mapping), .NET chỉ ra "i".
-        // Dấu kết hợp sau đó thành khoảng trắng nên token bị tách đôi, phải làm giống
+        // Python lower() maps İ to "i" + a combining dot (full case mapping), .NET gives just "i".
+        // The combining mark then becomes a space and splits the token in two; we must do the same
         string lower = text.Replace("İ", "i̇").ToLowerInvariant();
         string spaced = NonAlnum.Replace(lower, " ");
         var tokens = new List<string>();

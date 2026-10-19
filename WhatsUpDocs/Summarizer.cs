@@ -23,7 +23,7 @@ public sealed class Summarizer(ILlm llm)
     private static readonly Regex AnyIntList = new(@"\[\s*(\d+(?:\s*,\s*\d+)*)\s*\]", RegexOptions.Compiled);
     private static readonly Regex Int = new(@"\d+", RegexOptions.Compiled);
 
-    // Model đôi khi bọc ```json hoặc thêm chữ: lấy trường "sentences", không có thì mảng số cuối cùng
+    // The model sometimes wraps in ```json or adds text: take the "sentences" field, else the last array of numbers
     public static List<int> ParsePicked(string raw)
     {
         var m = SentencesField.Match(raw);
@@ -31,7 +31,7 @@ public sealed class Summarizer(ILlm llm)
         return list is null ? [] : Int.Matches(list).Select(x => int.Parse(x.Value)).Distinct().ToList();
     }
 
-    // Lấy câu theo thứ tự quan trọng LLM đưa, dừng khi vượt MaxWords (luôn giữ ít nhất 1 câu), rồi xếp lại theo thứ tự trong bài
+    // Take sentences in the LLM's importance order, stop past MaxWords (always keep at least 1), then reorder by position in the paper
     public static (string Summary, List<int> Used) Assemble(IReadOnlyList<int> picked, IReadOnlyList<string> sentences, int maxWords)
     {
         var used = new List<int>();

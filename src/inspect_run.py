@@ -1,4 +1,4 @@
-"""In mẫu câu oracle model bỏ sót và câu model chọn sai cho một lượt."""
+"""Print samples of oracle sentences the model missed and sentences it picked wrongly, for one run."""
 import random, sys
 from collections import Counter
 sys.path.insert(0, __import__("os").path.dirname(__file__))
@@ -13,8 +13,8 @@ for pid, ctx, raw, summ, score, ref in rows:
     tot += 1
     miss += [(pid, n, len(S), S[n][1], S[n][0]) for n in set(orc) - set(used)]
     wrong += [(pid, n, len(S), S[n][1], S[n][0]) for n in set(used) - set(orc)]
-print("5 câu đầu bài, tỉ lệ là câu oracle / model chọn:", [f"{first[(j,'o')]/tot:.0%}/{first[(j,'m')]/tot:.0%}" for j in range(5)])
-print("\n=== Câu ORACLE model BỎ SÓT ===")
+print("first 5 sentences of the paper, share picked by oracle / model:", [f"{first[(j,'o')]/tot:.0%}/{first[(j,'m')]/tot:.0%}" for j in range(5)])
+print("\n=== ORACLE sentences the model MISSED ===")
 for x in random.sample(miss, 14): print(f"#{x[0]} [{x[1]}/{x[2]}] {x[3]}: {x[4][:220]}")
-print("\n=== Câu model CHỌN nhưng không phải oracle ===")
+print("\n=== Sentences the model PICKED that are not oracle ===")
 for x in random.sample(wrong, 14): print(f"#{x[0]} [{x[1]}/{x[2]}] {x[3]}: {x[4][:220]}")

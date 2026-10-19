@@ -10,7 +10,7 @@ public sealed record RunDiagnosis(
     long RunId, int Docs, double? Score, double RefInPaper, double RefInContext, double RefInOutput,
     double OracleContext, double OracleFull, List<DocDiagnosis> PerDoc);
 
-// Trả lời câu "mất điểm ở đâu": context thiếu câu đáp án, hay model không chọn được câu đáp án đã có trong context
+// Answers "where are points lost": the context lacks the answer sentences, or the model fails to pick answer sentences that are in the context
 public static class Diagnostics
 {
     private static readonly Regex NumberedLine = new(@"^\[(\d+)\] (.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
@@ -19,7 +19,7 @@ public static class Diagnostics
     public static List<string> ContextSentences(string? contextText) =>
         contextText is null ? [] : NumberedLine.Matches(contextText).Select(m => m.Groups[2].Value).ToList();
 
-    // Tỉ lệ cặp từ (không lặp) của abstract có mặt trong văn bản
+    // Share of the abstract's (unique) bigrams present in the text
     public static double Coverage(string reference, string text)
     {
         var refSet = Rouge2.Bigrams(Rouge2.Tokenize(reference)).Keys.ToHashSet();
@@ -28,11 +28,11 @@ public static class Diagnostics
         return (double)refSet.Count(textSet.Contains) / refSet.Count;
     }
 
-    // Chọn câu tham lam để tối đa ROUGE-2 so với abstract thật: trần điểm nếu "chọn câu hoàn hảo"
+    // Greedy sentence selection maximizing ROUGE-2 against the real abstract: the score ceiling for "perfect picks"
     public static double Oracle(IReadOnlyList<string> sentences, string reference, int maxSentences = 15) =>
         OraclePick(sentences, reference, maxSentences).F1;
 
-    // Như Oracle nhưng trả cả chỉ số câu (0-based) theo thứ tự chọn, tức câu đóng góp nhiều nhất đứng đầu
+    // Like Oracle but also returns sentence indices (0-based) in pick order, i.e. the biggest contributor first
     public static (List<int> Order, double F1) OraclePick(IReadOnlyList<string> sentences, string reference,
         int maxSentences = 15, int maxWords = int.MaxValue)
     {
@@ -84,7 +84,7 @@ public static class Diagnostics
             Oracle(TextClean.Sentences(paper), reference));
     }
 
-    // Kết quả theo lượt không đổi khi lượt đã xong nên giữ trong RAM (khoá kèm thời điểm xong)
+    // Per-run results never change once a run is finished, so cache them in memory (keyed with the finish time)
     public static RunDiagnosis Run(RunRow run, RunStore store, AppDb db)
     {
         var key = (run.Id, run.FinishedAt ?? "");

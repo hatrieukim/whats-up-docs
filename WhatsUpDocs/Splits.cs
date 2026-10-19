@@ -9,11 +9,11 @@ public static class Splits
     public const int Dev = 150, Quick = 30, Holdout = 100;
     public static readonly string[] Names = ["quick", "dev", "holdout", "pool", "test"];
 
-    // Sắp theo SHA-256 của id thay vì Random(seed): không phụ thuộc thứ tự nạp CSV, Python tái lập được y hệt
+    // Sorted by SHA-256 of the id instead of Random(seed): independent of CSV load order, and Python reproduces it exactly
     public static string SortKey(long paperId) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"whatsupdocs-split-{Version}:{paperId}"))).ToLowerInvariant();
 
-    // quick ⊂ dev; dev, holdout, pool rời nhau và phủ hết train
+    // quick ⊂ dev; dev, holdout and pool are disjoint and cover all of train
     public static Dictionary<string, List<long>> Make(IEnumerable<long> trainIds, IEnumerable<long> testIds)
     {
         var ordered = trainIds.OrderBy(SortKey, StringComparer.Ordinal).ToList();

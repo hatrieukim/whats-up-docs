@@ -7,20 +7,20 @@ namespace WhatsUpDocs;
 
 public sealed record ExampleSentence(int Number, string Part, string Text);
 
-// Một bài mẫu: context đánh số y như lúc chạy thật, và "đáp án" = các câu oracle chọn so với abstract thật
+// One example: the numbered context exactly as in a real run, and the "answer" = the sentences the oracle picks against the real abstract
 public sealed record ExampleDoc(long PaperId, double OracleF1, int ContextTokens, string Context,
     List<int> Answer, List<ExampleSentence> Positives, List<ExampleSentence> Negatives);
 
-// Bài mẫu cho prompt (few-shot). Chỉ lấy từ tập pool để không lộ đáp án của dev/holdout/test.
-// Cùng cấu hình thì luôn ra cùng bộ bài, nên điểm các lượt so được với nhau
+// Few-shot examples for the prompt. Taken only from the pool set so dev/holdout/test answers never leak.
+// The same settings always give the same examples, so run scores stay comparable
 public sealed class FewShot(AppDb db)
 {
     public const string Placeholder = "{{examples}}";
     public static readonly string[] Modes = ["full", "short"];
 
-    // Bài mẫu đầy đủ chiếm nhiều token nên chỉ lấy bài có context ngắn
+    // Full examples take many tokens, so only papers with a short context are used
     private const int FullMaxTokens = 4000;
-    // Bài điển hình: đáp án rõ nhưng không phải kiểu bài chép nguyên khối abstract vào thân bài (oracle > 0.7)
+    // Typical papers: a clear answer, but not the kind that pastes the whole abstract into the body (oracle > 0.7)
     private const double MinOracle = 0.40, MaxOracle = 0.70, MaxOverlap = 0.08;
 
     private static readonly Regex PartLine = new(@"^=== (.*) ===$", RegexOptions.Compiled);
@@ -46,7 +46,7 @@ public sealed class FewShot(AppDb db)
             .Where(e => c.Examples != "full" || e.ContextTokens <= FullMaxTokens)
             .OrderBy(e => Shuffle(e.PaperId), StringComparer.Ordinal).ToList();
 
-        // Đa dạng chủ đề: bỏ bài có abstract trùng nhiều từ với bài đã chọn
+        // Topic diversity: skip papers whose abstract shares many words with one already picked
         var chosen = new List<(ExampleDoc Doc, HashSet<string> Words)>();
         var refs = docs.ToDictionary(d => d.PaperId, d => d.Summary!);
         foreach (var e in candidates)
@@ -66,7 +66,7 @@ public sealed class FewShot(AppDb db)
         var parts = Parts(context.Text);
         ExampleSentence At(int i) => new(i + 1, parts.GetValueOrDefault(i + 1, "paper"), context.Sentences[i]);
 
-        // Câu "trông giống" câu tuyên bố (có cue) nhưng gần như không có cặp từ nào trong abstract: dạy model cái nên bỏ
+        // Sentences that "look like" claim sentences (have a cue) but share almost no bigrams with the abstract: teach the model what to skip
         var refGrams = Rouge2.Bigrams(Rouge2.Tokenize(doc.Summary!)).Keys.ToHashSet();
         var negatives = Enumerable.Range(0, context.Sentences.Count)
             .Where(i => !order.Contains(i) && CueExtract.Cue.IsMatch(context.Sentences[i]))
@@ -81,7 +81,7 @@ public sealed class FewShot(AppDb db)
             order.Order().Select(At).ToList(), negatives);
     }
 
-    // Số câu → phần của context chứa nó (đầu bài / giữa / cuối)
+    // Sentence number -> the part of the context containing it (beginning / middle / end)
     private static Dictionary<int, string> Parts(string contextText)
     {
         var map = new Dictionary<int, string>();
@@ -121,7 +121,7 @@ public sealed class FewShot(AppDb db)
         return sb.ToString().TrimEnd();
     }
 
-    // Thứ tự xáo cố định theo id (không dùng Random) để bộ mẫu không đổi giữa các lần chạy
+    // Fixed shuffle order by id (no Random) so the example set stays the same across runs
     private static string Shuffle(long paperId) =>
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes($"whatsupdocs-fewshot-v1:{paperId}")));
 

@@ -3,7 +3,7 @@ using WhatsUpDocs;
 
 namespace WhatsUpDocs.Tests;
 
-// DB tạm nạp từ CSV thật, dùng chung cho mọi test cần dữ liệu (nạp ~58MB một lần)
+// Temporary DB loaded from the real CSVs, shared by every test that needs data (loads ~58MB once)
 public sealed class Corpus : IDisposable
 {
     public static readonly string Root = FindRoot();
@@ -30,7 +30,7 @@ public sealed class Corpus : IDisposable
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
             if (File.Exists(Path.Combine(dir.FullName, "WhatsUpDocs.sln"))) return dir.FullName;
-        throw new DirectoryNotFoundException("Không tìm thấy WhatsUpDocs.sln");
+        throw new DirectoryNotFoundException("WhatsUpDocs.sln not found");
     }
 
     public void Dispose()

@@ -11,10 +11,10 @@ public sealed record ContextOptions(
 
 public sealed record ContextResult(string Text, IReadOnlyList<string> Sentences, int ApproxTokens);
 
-// Phần bài đưa cho LLM. Câu giống abstract tập trung ở section đầu và cuối (EDA: mật độ gấp ~1,5 lần phần giữa)
+// The part of the paper given to the LLM. Abstract-like sentences cluster in the first and last sections (EDA: ~1.5x the density of the middle)
 public static class ContextBuilder
 {
-    // Ước lượng thô ~4 ký tự/token tiếng Anh, chỉ để cắt ngân sách
+    // Rough estimate of ~4 chars per English token, only used for budget cuts
     public const int CharsPerToken = 4;
 
     private static readonly Regex EndHeader = new(@"conclu|discussion|summary|final (remarks|thoughts)|implications",
@@ -38,7 +38,7 @@ public static class ContextBuilder
             return new(text, [], Tokens(text));
         }
 
-        // Numbered: mỗi câu một số [n], dòng header giữ lại không đánh số để LLM vẫn thấy cấu trúc
+        // Numbered: each sentence gets a number [n]; header lines are kept unnumbered so the LLM still sees the structure
         var sentences = new List<string>();
         var sb = new StringBuilder();
         foreach (var part in parts)
@@ -68,7 +68,7 @@ public static class ContextBuilder
         var parts = new List<Part>();
         if (title is not null) parts.Add(new("LAST LINE OF THE EXTRACTED TEXT (OFTEN THE PAPER TITLE)", title));
 
-        // Bài ngắn: đưa cả bài, cắt ra chỉ làm mất chữ
+        // Short paper: send it whole, cutting would only lose words
         if (cleaned.Length <= introChars + endChars + midChars)
         {
             parts.Add(new("FULL PAPER", cleaned));
@@ -96,7 +96,7 @@ public static class ContextBuilder
         return parts;
     }
 
-    // Header kết luận/thảo luận cuối cùng nằm sau phần mở đầu; không có thì lấy đoạn cuối bài
+    // Last conclusion/discussion header after the beginning; if none, take the end of the paper
     private static int EndStart(string cleaned, int endChars, int minStart)
     {
         int best = -1;
@@ -109,7 +109,7 @@ public static class ContextBuilder
         return para >= 0 && para < cleaned.Length - 200 ? para + 2 : start;
     }
 
-    // Cắt ở ranh giới đoạn, không được thì ở ranh giới câu, để không đưa nửa câu cho LLM
+    // Cut at a paragraph boundary, else at a sentence boundary, so the LLM never gets half a sentence
     public static string Cut(string text, int maxChars)
     {
         if (text.Length <= maxChars) return text;

@@ -14,9 +14,9 @@ public sealed class SummarizerTests
 
     private static readonly string[] Sents =
     [
-        "one two three four five six",          // 1: 6 từ
-        "a b c d e f g h",                      // 2: 8 từ
-        "alpha beta gamma delta epsilon zeta",  // 3: 6 từ
+        "one two three four five six",          // 1: 6 words
+        "a b c d e f g h",                      // 2: 8 words
+        "alpha beta gamma delta epsilon zeta",  // 3: 6 words
     ];
 
     [Fact]
@@ -27,7 +27,7 @@ public sealed class SummarizerTests
         Assert.Equal("one two three four five six alpha beta gamma delta epsilon zeta", summary);
     }
 
-    // Theo thứ tự quan trọng: lấy 3 (6 từ), bỏ 2 vì 6+8 > 13, lấy 1 (6+6 = 12)
+    // In importance order: take 3 (6 words), skip 2 since 6+8 > 13, take 1 (6+6 = 12)
     [Fact]
     public void Assemble_respects_max_words_by_importance()
     {

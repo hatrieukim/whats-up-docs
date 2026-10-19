@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace WhatsUpDocs;
 
-// Baseline không dùng LLM, port từ src/baselines.py: lấy câu "this paper / we find..." ở đầu và cuối bài
+// No-LLM baseline, ported from src/baselines.py: take "this paper / we find..." sentences from the start and end of the paper
 public static class CueExtract
 {
     public static readonly Regex Cue = new(

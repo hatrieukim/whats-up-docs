@@ -12,7 +12,7 @@ public static class Api
     {
         var g = app.MapGroup("/api/prompts");
 
-        // Kèm điểm lượt xong gần nhất theo từng tập, chỉ tính lượt chạy đúng nội dung hiện tại của bản đó
+        // Include the latest finished run score per set, counting only runs of this version's current content
         g.MapGet("", (Prompts prompts, RunService runs) =>
         {
             var done = runs.List().Where(r => r.Status == "done" && r.Stale is null).ToList();
@@ -38,7 +38,7 @@ public static class Api
             return prompts.Update(id, body.Content!, body.Note, cfg) ? Results.Ok(new { id }) : Results.NotFound();
         });
 
-        // Thử bản đang soạn (chưa cần lưu) trên vài bài, không ghi DB
+        // Try the draft (unsaved) on a few papers, without writing to the DB
         app.MapPost("/api/try", async (TryInput body, AppDb db, Summarizer summarizer, FewShot fewShot, RunService runs, CancellationToken ct) =>
         {
             var cfg = (body.Config ?? new PromptConfig()).Normalized();
@@ -61,7 +61,7 @@ public static class Api
             return Results.Ok(new { model, results });
         });
 
-        // Xem trước bộ bài mẫu sẽ chèn vào {{examples}} với cấu hình đang soạn
+        // Preview the examples block inserted into {{examples}} with the draft settings
         app.MapPost("/api/examples", (PromptConfig body, FewShot fewShot) =>
         {
             var cfg = body.Normalized();
@@ -108,7 +108,7 @@ public static class Api
                 ? Results.Ok(new { run = Decorate(run, runs), outputs = store.Outputs(id) })
                 : Results.NotFound());
 
-        // Một bài trong một lượt: kèm abstract tham chiếu để tô màu
+        // One paper in one run, with the reference abstract for highlighting
         g.MapGet("{id:long}/outputs/{paperId:long}", (long id, long paperId, RunStore store, AppDb db) =>
             store.Output(id, paperId) is { } o
                 ? Results.Ok(new { output = o, reference = db.GetDoc(paperId)?.Summary })
@@ -122,7 +122,7 @@ public static class Api
         g.MapDelete("{id:long}", (long id, RunService runs, RunStore store) =>
             runs.IsRunning(id) ? Results.Conflict("Run is in progress, cancel it first") : store.Delete(id) ? Results.Ok() : Results.NotFound());
 
-        // Tiến độ mỗi giây cho tới khi lượt dừng; EventSource tự nối lại nếu rớt mạng
+        // Progress every second until the run stops; EventSource reconnects by itself if the connection drops
         g.MapGet("{id:long}/events", async (long id, RunService runs, RunStore store, HttpContext http, CancellationToken ct) =>
         {
             Sse.Start(http.Response);

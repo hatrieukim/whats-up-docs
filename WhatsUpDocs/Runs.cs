@@ -4,7 +4,7 @@ using Dapper;
 
 namespace WhatsUpDocs;
 
-// Class có setter vì cột tổng hợp (AVG, SUM) trả kiểu không cố định, Dapper tự đổi kiểu qua setter
+// A class with setters because aggregate columns (AVG, SUM) have no fixed type; Dapper converts via the setters
 public sealed class RunRow
 {
     public long Id { get; set; }
@@ -29,7 +29,7 @@ public sealed class RunRow
     public long Total { get; set; }
     public long Done { get; set; }
     public long Errors { get; set; }
-    // Không có trong DB: lý do điểm đã cũ (prompt bị sửa sau khi chạy), null nếu còn đúng
+    // Not stored in the DB: why the score is stale (prompt edited after the run), null if still valid
     public string? Stale { get; set; }
 }
 
@@ -51,7 +51,7 @@ public sealed class OutputRow
     public string CreatedAt { get; set; } = "";
 }
 
-// Examples: khối bài mẫu đã dựng lúc tạo lượt, để chạy lại/nộp dùng đúng bộ đó
+// Examples: the examples block built when the run was created, so retries/submissions use the same set
 public sealed record RunSnapshot(string Prompt, PromptConfig Config, int Parallel, string? Examples = null);
 
 public sealed record RunRequest(string? Name, long PromptId, string? Model, string? SetName, int? Parallel);
@@ -71,7 +71,7 @@ public sealed class RunStore(AppDb db)
     public long Create(string name, PromptRow prompt, string model, string setName, RunSnapshot snapshot) =>
         Create(name, prompt.Id, prompt.Hash, model, setName, snapshot, null);
 
-    // parentRun: lượt gốc khi chạy lại đúng cấu hình của nó trên tập khác (vd dev → test để nộp)
+    // parentRun: the source run when re-running its exact setup on another set (e.g. dev -> test for a submission)
     public long Create(string name, long? promptId, string? promptHash, string model, string setName, RunSnapshot snapshot, long? parentRun)
     {
         using var conn = db.Open();
@@ -97,7 +97,7 @@ public sealed class RunStore(AppDb db)
         return conn.QuerySingleOrDefault<RunRow>($"SELECT {RunColumns} FROM runs r WHERE r.id = @id", new { id });
     }
 
-    // withContext=false bỏ cột context (~16KB/bài) cho danh sách
+    // withContext=false drops the context column (~16KB/paper) for listings
     public List<OutputRow> Outputs(long runId, bool withContext = false)
     {
         using var conn = db.Open();
@@ -124,7 +124,7 @@ public sealed class RunStore(AppDb db)
             """, o);
     }
 
-    // Điểm = trung bình trên các bài chạy được; bài lỗi đếm riêng chứ không tính 0, để lỗi mạng không kéo điểm prompt xuống
+    // Score = mean over papers that ran; errors are counted separately, not as 0, so network errors do not drag the prompt score down
     public void Finish(long runId, string status, string? error)
     {
         using var conn = db.Open();
@@ -207,7 +207,7 @@ public sealed class RunService(AppDb db, Prompts prompts, RunStore store, Summar
         return (runId, null);
     }
 
-    // Chạy đúng prompt + cấu hình + model đã chụp ở lượt gốc trên một tập khác, kể cả khi prompt đã bị sửa sau đó
+    // Run the exact prompt + settings + model snapshotted in the source run on another set, even if the prompt was edited since
     public (long? RunId, string? Error) Rerun(long sourceRunId, string setName, string? name, int? parallel)
     {
         if (store.Get(sourceRunId) is not { Kind: "real" } source) return (null, $"No run #{sourceRunId}");
@@ -220,7 +220,7 @@ public sealed class RunService(AppDb db, Prompts prompts, RunStore store, Summar
         return (runId, null);
     }
 
-    // Chạy lại bài lỗi và bài chưa có output (lượt bị ngắt), với đúng prompt/cấu hình đã chụp lúc tạo lượt
+    // Retry failed papers and papers with no output (interrupted run), with the prompt/settings snapshotted at run creation
     public string? Retry(long runId)
     {
         if (IsRunning(runId)) return "Run is in progress";

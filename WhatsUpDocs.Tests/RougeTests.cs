@@ -7,7 +7,7 @@ namespace WhatsUpDocs.Tests;
 [Collection("corpus")]
 public sealed class RougeTests(Corpus corpus)
 {
-    // Điểm do code chính thức của BTC tính (src/make_fixtures.py) phải khớp tuyệt đối, không dung sai
+    // Scores computed by the organizers' official code (src/make_fixtures.py) must match exactly, with no tolerance
     [Fact]
     public void Matches_official_scorer_exactly_on_all_fixture_pairs()
     {
@@ -20,11 +20,11 @@ public sealed class RougeTests(Corpus corpus)
             if (s.Precision != row.GetProperty("p").GetDouble() || s.Recall != row.GetProperty("r").GetDouble() || s.F1 != row.GetProperty("f").GetDouble())
                 mismatches.Add($"#{n}: C# {s.F1:R} vs Python {row.GetProperty("f").GetDouble():R} | pred={Short(row.GetProperty("pred").GetString()!)}");
         }
-        Assert.True(n > 4000, $"Fixture chỉ có {n} cặp");
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count}/{n} cặp lệch:\n" + string.Join("\n", mismatches.Take(10)));
+        Assert.True(n > 4000, $"Fixture has only {n} pairs");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count}/{n} pairs differ:\n" + string.Join("\n", mismatches.Take(10)));
     }
 
-    // Token hoá cả 1.345 bài + 1.000 abstract giống Python từng token
+    // Tokenize all 1,345 papers + 1,000 abstracts exactly like Python, token for token
     [Fact]
     public void Tokenizes_whole_corpus_like_official_tokenizer()
     {
@@ -42,7 +42,7 @@ public sealed class RougeTests(Corpus corpus)
                 mismatches.Add($"{id}/{field}: {tokens.Count} vs {row.GetProperty("n").GetInt32()} token");
         }
         Assert.Equal(1000 + 1000 + 345, n);
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} văn bản lệch:\n" + string.Join("\n", mismatches.Take(10)));
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} texts differ:\n" + string.Join("\n", mismatches.Take(10)));
     }
 
     [Theory]
@@ -56,7 +56,7 @@ public sealed class RougeTests(Corpus corpus)
     [Fact]
     public void Counts_repeated_bigrams_by_min()
     {
-        // pred có "the the" ×2, ref có ×1 → khớp 1; P = 1/2, R = 1/1
+        // pred has "the the" x2, ref has x1 -> 1 match; P = 1/2, R = 1/1
         var s = Rouge2.Score("the the the", "the the");
         Assert.Equal(0.5, s.Precision);
         Assert.Equal(1.0, s.Recall);

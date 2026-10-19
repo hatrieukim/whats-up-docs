@@ -21,7 +21,7 @@ public static class TextClean
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
     private static readonly Regex SentenceBreak = new(@"(?<=[.!?])\s+(?=[A-Z(""'])", RegexOptions.Compiled);
 
-    // Bỏ những thứ abstract thật gần như không có: entity, marker ảnh, bảng, caption, trích dẫn
+    // Remove what real abstracts almost never contain: entities, image markers, tables, captions, citations
     public static string Clean(string text, bool keepHeaders)
     {
         string t = Decode(text.Replace("\r\n", "\n"));
@@ -34,7 +34,7 @@ public static class TextClean
         return BlankLines.Replace(t, "\n\n").Trim();
     }
 
-    // Vài bài bị mã hoá hai lần (&amp;amp;) nên giải mã đến khi không đổi nữa
+    // Some papers are double-encoded (&amp;amp;), so decode until nothing changes
     private static string Decode(string t)
     {
         for (int i = 0; i < 3; i++)
@@ -48,7 +48,7 @@ public static class TextClean
 
     public static int Words(string s) => Whitespace.Split(s.Trim()).Count(w => w.Length > 0);
 
-    // Câu 6–90 từ: ngắn hơn thường là mảnh tiêu đề/nhãn, dài hơn thường là bảng hoặc danh sách bị dính
+    // Sentences of 6-90 words: shorter ones are usually heading/label fragments, longer ones are usually merged tables or lists
     public static List<string> Sentences(string cleaned)
     {
         string flat = Whitespace.Replace(cleaned, " ");
@@ -77,8 +77,8 @@ public static class TextClean
 
     private static readonly Regex NotATitle = new(@"https?://|doi\.org|\b(19|20)\d{2}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    // ~9% bài kết thúc bằng một dòng ngắn không có dấu chấm, thường chính là tiêu đề bài báo bị đẩy xuống cuối.
-    // Dòng có URL/DOI/năm thường là tài liệu tham khảo sót lại, không phải tiêu đề
+    // ~9% of papers end with a short line without a period, often the paper title pushed to the end.
+    // Lines with a URL/DOI/year are usually leftover references, not the title
     public static string? TrailingTitle(string rawText)
     {
         string cleaned = Clean(rawText, keepHeaders: true);

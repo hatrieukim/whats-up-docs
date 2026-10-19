@@ -34,7 +34,7 @@ var (train, test) = db.ImportIfEmpty(Path.Combine(dataDir, "train.csv"), Path.Co
 if (train + test > 0) app.Logger.LogInformation("Imported {Train} train and {Test} test papers from {Dir}", train, test, dataDir);
 if (db.EnsureSets() is > 0 and var sets) app.Logger.LogInformation("Created {Count} sets (split {Version})", sets, Splits.Version);
 if (app.Services.GetRequiredService<Prompts>().SeedIfEmpty() is { } seeded) app.Logger.LogInformation("Seeded default prompt #{Id}", seeded);
-// Lượt đang chạy dở khi app tắt: đánh dấu để người dùng bấm "chạy lại bài lỗi" (chạy nốt bài còn thiếu)
+// Runs still in progress when the app stopped: mark them so the user can click "retry failed" (finishes the missing papers)
 if (app.Services.GetRequiredService<RunStore>().MarkInterrupted() is > 0 and var stopped) app.Logger.LogWarning("{Count} runs were interrupted by shutdown", stopped);
 
 app.UseDefaultFiles();
@@ -67,7 +67,7 @@ app.MapGet("/api/docs", () =>
     return db.ListDocs().Select(d => new { d.PaperId, d.Split, set = membership.GetValueOrDefault(d.PaperId), d.Chars, d.SummaryWords });
 });
 
-// view: raw | clean | context; mode áp dụng cho context
+// view: raw | clean | context; mode applies to context
 app.MapGet("/api/docs/{id:long}", (long id, string? view, string? mode) =>
 {
     if (db.GetDoc(id) is not { } doc) return Results.NotFound();
@@ -105,7 +105,7 @@ app.MapPromptApi();
 app.MapRunApi();
 app.MapSubmissionApi();
 
-// Kiểm tra đường MAF → CLIProxyAPI → model
+// Check the path MAF -> OpenAI-compatible endpoint -> model
 app.MapGet("/api/llm/ping", async (ChatClient chat, CancellationToken ct) =>
 {
     var sw = Stopwatch.StartNew();

@@ -1,4 +1,4 @@
-"""Phân tích một lượt: câu model chọn so với câu oracle (chọn tham lam theo abstract thật). Không gọi LLM."""
+"""Analyze a run: sentences the model picked vs oracle sentences (greedy picks against the real abstract). No LLM calls."""
 import json, re, sqlite3, sys
 from collections import Counter
 from pathlib import Path
@@ -62,13 +62,13 @@ def report():
         for w in sweep: sweep[w].append(f1(assemble(pk, S, w), ref))
         for k in firstk: firstk[k].append(f1(assemble(pk[:k], S, 10_000), ref))
 
-    print(f"docs {stats['docs']}  |  câu oracle TB {np.mean(nsent_or):.1f} ({np.mean(words_or):.0f} từ)  |  câu model dùng TB {np.mean(nsent_md):.1f}")
-    print(f"trong số câu oracle, model lấy trúng {stats['both']/stats['orc']:.0%}; trong số câu model lấy, {stats['both']/stats['md']:.0%} là câu oracle")
-    print("phần của context (oracle vs model):", {k: f"{part_or[k]/stats['orc']:.0%} vs {part_md[k]/stats['md']:.0%}" for k in part_or})
-    print("vị trí tương đối trong context, theo 5 khúc (oracle):", np.round(np.histogram(rel_or, bins=5, range=(0,1))[0]/len(rel_or), 2))
-    print("vị trí tương đối trong context, theo 5 khúc (model) :", np.round(np.histogram(rel_md, bins=5, range=(0,1))[0]/len(rel_md), 2))
-    print("quét số từ tối đa (dùng lại lựa chọn của model):", {w: round(np.mean(v), 4) for w, v in sweep.items()})
-    print("chỉ lấy k câu đầu model liệt kê (quan trọng nhất):", {k: round(np.mean(v), 4) for k, v in firstk.items()})
+    print(f"docs {stats['docs']}  |  mean oracle sentences {np.mean(nsent_or):.1f} ({np.mean(words_or):.0f} words)  |  mean model sentences used {np.mean(nsent_md):.1f}")
+    print(f"of the oracle sentences, the model picked {stats['both']/stats['orc']:.0%}; of the model's picks, {stats['both']/stats['md']:.0%} are oracle sentences")
+    print("context part (oracle vs model):", {k: f"{part_or[k]/stats['orc']:.0%} vs {part_md[k]/stats['md']:.0%}" for k in part_or})
+    print("relative position in context, 5 bins (oracle):", np.round(np.histogram(rel_or, bins=5, range=(0,1))[0]/len(rel_or), 2))
+    print("relative position in context, 5 bins (model) :", np.round(np.histogram(rel_md, bins=5, range=(0,1))[0]/len(rel_md), 2))
+    print("max-words sweep (reusing the model's picks):", {w: round(np.mean(v), 4) for w, v in sweep.items()})
+    print("only the first k sentences the model listed (most important):", {k: round(np.mean(v), 4) for k, v in firstk.items()})
 
 
 if __name__ == "__main__":

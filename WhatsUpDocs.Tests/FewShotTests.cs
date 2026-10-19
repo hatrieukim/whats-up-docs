@@ -4,7 +4,7 @@ namespace WhatsUpDocs.Tests;
 
 public sealed class FewShotConfigTests
 {
-    // Thêm trường bài mẫu không được làm đổi hash của các bản prompt cũ (nếu không mọi lượt cũ thành "prompt đã sửa")
+    // Adding the examples field must not change the hash of old prompt versions (otherwise every old run becomes "prompt edited")
     [Fact]
     public void Default_config_json_has_no_example_fields()
     {

@@ -1,6 +1,6 @@
-"""Sinh fixture để test C# khớp tuyệt đối với code chấm chính thức của BTC.
+"""Generate fixtures so the C# tests can check exact parity with the organizers' official scoring code.
 
-Chạy: .venv/bin/python src/make_fixtures.py  → data/fixtures/*.
+Run: .venv/bin/python src/make_fixtures.py  -> data/fixtures/*.
 """
 import hashlib, json, random, sys
 from pathlib import Path
@@ -26,7 +26,7 @@ def score(pred, ref):
     return s.precision, s.recall, s.fmeasure
 
 
-# 1. Cặp (pred, ref) đa dạng: điểm thấp, trung bình, cao, và văn bản thô nhiều ký tự lạ
+# 1. Varied (pred, ref) pairs: low, medium and high scores, and raw text with many unusual characters
 EDGE = [
     ("", "a b c"), ("a b c", ""), ("", ""), ("x", "x"), ("the the the", "the the"),
     ("Café-Au-Lait 2020s!!", "cafe au lait 2020s"), ("COVID-19 don't", "covid 19 don t"),
@@ -49,7 +49,7 @@ with open(OUT / "rouge2_pairs.jsonl", "w") as f:
             f.write(json.dumps({"pred": pred, "ref": ref, "p": p, "r": r, "f": fm}) + "\n"); n += 1
 print("rouge2_pairs:", n)
 
-# 2. Token hoá cả corpus (text + summary) để bắt mọi khác biệt lowercase/regex
+# 2. Tokenize the whole corpus (text + summary) to catch any lowercase/regex difference
 with open(OUT / "tokens.jsonl", "w") as f:
     for df in (train, test):
         for row in df.itertuples():
@@ -61,7 +61,7 @@ with open(OUT / "tokens.jsonl", "w") as f:
                                     "sha": hashlib.sha256(" ".join(toks).encode()).hexdigest()}) + "\n")
 print("tokens: done")
 
-# 3. Chia tập giống hệt Splits.cs
+# 3. Splits identical to Splits.cs
 key = lambda i: hashlib.sha256(f"whatsupdocs-split-v1:{i}".encode()).hexdigest()
 ordered = sorted(train.paper_id.tolist(), key=key)
 dev = ordered[:150]
@@ -70,7 +70,7 @@ splits = {"quick": sorted(dev[:30]), "dev": sorted(dev), "holdout": sorted(order
 (OUT / "splits.json").write_text(json.dumps(splits))
 print("splits:", {k: len(v) for k, v in splits.items()})
 
-# 4. Điểm cue_extract (Python) trên dev, để so với bản C#
+# 4. cue_extract (Python) scores on dev, to compare with the C# version
 by_id = train.set_index("paper_id")
 per = {int(i): score(cue_extract(by_id.text[i]), by_id.summary[i])[2] for i in splits["dev"]}
 mean = sum(per.values()) / len(per)

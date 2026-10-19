@@ -53,7 +53,7 @@ public sealed class TextTests(Corpus corpus)
         Assert.Equal("One two. Three four.", ContextBuilder.Cut("One two. Three four. Five six seven", 25));
     }
 
-    // Mọi bài đều ra context không rỗng, nằm trong ngân sách, và không còn rác
+    // Every paper yields a non-empty context, within budget, with no junk left
     [Fact]
     public void Context_for_every_doc_is_within_budget()
     {
@@ -62,8 +62,8 @@ public sealed class TextTests(Corpus corpus)
         foreach (var doc in corpus.Db.GetDocs(corpus.Db.GetSet("dev").Concat(corpus.Db.GetSet("test"))))
         {
             var c = ContextBuilder.Build(doc.Text);
-            Assert.False(string.IsNullOrWhiteSpace(c.Text), $"bài {doc.PaperId} context rỗng");
-            Assert.True(c.Text.Length <= budget, $"bài {doc.PaperId}: {c.Text.Length} ký tự > {budget}");
+            Assert.False(string.IsNullOrWhiteSpace(c.Text), $"paper {doc.PaperId}: empty context");
+            Assert.True(c.Text.Length <= budget, $"paper {doc.PaperId}: {c.Text.Length} chars > {budget}");
             Assert.DoesNotContain("<!-- image -->", c.Text);
             Assert.DoesNotContain("&amp;", c.Text);
         }
@@ -87,7 +87,7 @@ public sealed class TextTests(Corpus corpus)
         Assert.True(c.Text.Length <= 5000 * ContextBuilder.CharsPerToken);
     }
 
-    // Bản C# có thêm bước bỏ bảng nên không bắt buộc trùng từng bài; điểm trung bình phải sát bản Python
+    // The C# version also drops tables, so papers need not match one by one; the mean score must be close to Python's
     [Fact]
     public void Cue_extract_on_dev_is_close_to_python()
     {

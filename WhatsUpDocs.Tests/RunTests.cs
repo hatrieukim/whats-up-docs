@@ -5,7 +5,7 @@ using WhatsUpDocs;
 
 namespace WhatsUpDocs.Tests;
 
-// LLM giả: luôn chọn câu 1–8; bài nằm trong `broken` thì trả chữ không có số → lỗi đọc output (không bị retry)
+// Fake LLM: always picks sentences 1-8; papers in `broken` get text with no numbers -> output parse error (not retried)
 public sealed class FakeLlm : ILlm
 {
     public HashSet<string> BrokenMarkers { get; } = [];
@@ -45,7 +45,7 @@ public sealed class RunTests(Corpus corpus)
     private static async Task<RunRow> WaitAsync(RunService service, RunStore store, long id)
     {
         for (int i = 0; i < 600 && service.IsRunning(id); i++) await Task.Delay(50);
-        Assert.False(service.IsRunning(id), "Lượt chạy quá lâu");
+        Assert.False(service.IsRunning(id), "Run took too long");
         return store.Get(id)!;
     }
 
@@ -63,7 +63,7 @@ public sealed class RunTests(Corpus corpus)
         Assert.Equal(0, run.Errors);
         Assert.Equal(30, llm.Calls);
 
-        // Điểm lượt = trung bình F1 tính lại độc lập từ câu 1–8 của context
+        // Run score = mean F1 recomputed independently from context sentences 1-8
         var cfg = PromptConfig.Parse(prompts.Get(promptId)!.Config);
         double expected = corpus.Db.GetDocs(corpus.Db.GetSet("quick")).Average(d =>
         {
@@ -81,7 +81,7 @@ public sealed class RunTests(Corpus corpus)
         long promptId = prompts.SeedIfEmpty() ?? prompts.List().Last().Id;
         var quick = corpus.Db.GetDocs(corpus.Db.GetSet("quick"));
         var cfg = PromptConfig.Parse(prompts.Get(promptId)!.Config);
-        // Đánh dấu 3 bài lỗi bằng câu đầu tiên trong context của chúng
+        // Mark 3 papers as broken by the first sentence of their context
         var brokenDocs = quick.Take(3).ToList();
         foreach (var d in brokenDocs) llm.BrokenMarkers.Add(Summarizer.Context(d.Text, cfg).Sentences[0]);
 

@@ -35,7 +35,7 @@ public sealed class SubmissionTests(Corpus corpus) : IDisposable
         var (src, _) = service.Start(new RunRequest("src", pid, "fake-model", "quick", 8));
         await WaitAsync(service, store, src!.Value);
 
-        // Sửa prompt sau khi chạy: lượt test vẫn phải dùng bản đã chụp
+        // Edit the prompt after the run: the test run must still use the snapshot
         prompts.Update(pid, "CHANGED {{document}}", null, new PromptConfig());
         llm.BrokenMarkers.Add("CHANGED");
 
@@ -51,7 +51,7 @@ public sealed class SubmissionTests(Corpus corpus) : IDisposable
 
         var check = subs.Check(run.Id);
         Assert.True(check.Ok, check.Problem);
-        var (row, createErr) = subs.Create(run.Id, "thử");
+        var (row, createErr) = subs.Create(run.Id, "trial");
         Assert.Null(createErr);
 
         using var reader = new StreamReader(row!.FilePath);
@@ -61,7 +61,7 @@ public sealed class SubmissionTests(Corpus corpus) : IDisposable
         Assert.All(records, r => Assert.False(string.IsNullOrWhiteSpace(r.summary)));
         Assert.Equal(File.ReadLines(Corpus.Data("submission_format.csv")).First(), File.ReadLines(row.FilePath).First());
 
-        Assert.True(subs.Update(row.Id, new SubmissionUpdate(0.2, "điểm public")));
+        Assert.True(subs.Update(row.Id, new SubmissionUpdate(0.2, "public score")));
         Assert.Equal(0.2, subs.Get(row.Id)!.PublicScore);
     }
 

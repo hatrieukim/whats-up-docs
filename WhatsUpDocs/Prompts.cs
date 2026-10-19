@@ -6,13 +6,13 @@ using Dapper;
 
 namespace WhatsUpDocs;
 
-// Cấu hình đi kèm một bản prompt. Strategy hiện chỉ có "select" (P2: LLM chọn số câu, ghép nguyên văn)
+// Settings attached to a prompt version. The only strategy for now is "select" (P2: the LLM picks sentence numbers, assembled verbatim)
 public sealed record PromptConfig(
     string Strategy = "select",
     int TargetWords = 200, int MaxWords = 250, int MinSentences = 5, int MaxSentences = 10,
     double Temperature = 0,
     int IntroTokens = 2500, int EndTokens = 1500, int MiddleTokens = 500,
-    // Bài mẫu (few-shot): null = không dùng. Bỏ khỏi JSON khi để mặc định để mã hash của các bản cũ không đổi
+    // Few-shot examples: null = none. Omitted from the JSON when default so the hash of old versions does not change
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] string? Examples = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int ExampleCount = 0)
 {
@@ -31,7 +31,7 @@ public sealed record PromptConfig(
         : Examples is not null && ExampleCount is < 1 or > 40 ? "Example count must be within 1–40"
         : null;
 
-    // Ô chọn trên UI gửi "" hoặc "none" khi không dùng bài mẫu
+    // The UI select sends "" or "none" when no examples are used
     public PromptConfig Normalized() => Examples is null or "" or "none" ? this with { Examples = null, ExampleCount = 0 } : this;
 }
 
@@ -90,8 +90,8 @@ public sealed class Prompts(AppDb db)
     private static string Normalize(string s) => s.Replace("\r\n", "\n").Trim();
     private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    // Bản P2 đầu tiên. Ý chính: abstract do tác giả ghép từ chính các câu "tuyên bố" trong mở đầu/kết luận,
-    // và điểm là trùng cặp từ, nên chỉ cho LLM chọn câu, không cho viết lại
+    // The first P2 version. Main idea: authors build the abstract from their own "claim" sentences in the introduction/conclusion,
+    // and the score is bigram overlap, so the LLM only picks sentences and never rewrites them
     public const string DefaultSelect = """
         You are reconstructing the abstract of a social-science research paper by selecting sentences from the paper itself.
 
